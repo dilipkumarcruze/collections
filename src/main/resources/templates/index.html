@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Memories</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-top: 0;
+            opacity: 0;
+            animation: fadeInTop 2s forwards;
+        }
+
+        .qr-code-container {
+            margin: 50px auto;
+        }
+
+        .fade-in-buttons {
+            opacity: 0;
+            animation: fadeInBottom 2s 1s forwards; /* Delay for 1s after QR code */
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        @keyframes fadeInTop {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInBottom {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to Wedding Memories</h1>
+
+    <div class="qr-code-container">
+        <img src="/generateQRCode" alt="QR Code">
+        <p>Scan the QR code to upload images.</p>
+    </div>
+
+    <div class="fade-in-buttons">
+        <button onclick="window.location.href='/upload'">Upload</button>
+        <button onclick="window.location.href='/images'">Images</button>
+    </div>
+</body>
+</html>
