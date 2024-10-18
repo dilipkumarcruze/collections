@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Upload Image</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #f0f0f0;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			margin: 0;
+		}
+
+		.upload-container {
+			background-color: #333;
+			padding: 20px;
+			border-radius: 10px;
+			text-align: center;
+			color: white;
+			width: 300px;
+			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+		}
+
+		.upload-container h1 {
+			margin-bottom: 20px;
+		}
+
+		.upload-container button,
+		.upload-container input[type="file"] {
+			margin: 10px 0;
+			padding: 10px;
+			border: none;
+			border-radius: 5px;
+			background-color: #007BFF;
+			color: white;
+			cursor: pointer;
+			width: 100%;
+		}
+
+		.upload-container button:hover {
+			background-color: #0056b3;
+		}
+
+		.upload-container i {
+			margin-right: 8px;
+		}
+
+		#video {
+			display: none;
+			width: 100%;
+			margin-top: 15px;
+		}
+
+		.modal {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.5);
+			display: none;
+			justify-content: center;
+			align-items: center;
+		}
+
+		.modal-content {
+			background: transparent;
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+		}
+
+		.modal-content img {
+			max-width: 100%;
+			border-radius: 10px;
+		}
+
+		.modal-buttons {
+			margin-top: 20px;
+		}
+
+		.modal-buttons button {
+			padding: 10px 20px;
+			margin: 0 10px;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		.modal-buttons .upload {
+			background-color: #28a745;
+			color: white;
+		}
+
+		.modal-buttons .cancel {
+			background-color: #dc3545;
+			color: white;
+		}
+
+		/* Responsive */
+		@media (max-width: 768px) {
+			.upload-container {
+				width: 90%;
+			}
+		}
+
+		@media (max-width: 480px) {
+			.upload-container {
+				width: 100%;
+			}
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="upload-container">
+		<h1>Upload Image</h1>
+		<button id="open-camera"><i class="fas fa-camera"></i> Open Camera</button>
+		<video id="video" autoplay></video>
+		<button id="capture" style="display: none;"><i class="fas fa-camera"></i> Capture</button>
+		<button id="close-camera" style="display: none;">Close Camera</button>
+		<form action="/uploadImage" method="post" enctype="multipart/form-data" id="upload-form">
+			<input type="file" name="file" id="file-upload" required>
+			<button type="submit">Upload</button>
+		</form>
+		<p th:text="${message}"></p>
+		<a href="/images">View Uploaded Images</a>
+		<button onclick="window.location.href='/'">Open QR</button>
+	</div>
+
+	<!-- Modal -->
+	<div class="modal" id="image-modal">
+		<div class="modal-content">
+			<img id="captured-image" alt="Captured Image">
+			<div class="modal-buttons">
+				<button class="cancel" id="cancel-modal">Cancel</button>
+				<button class="upload" id="upload-modal">Upload</button>
+			</div>
+		</div>
+	</div>
+
+	<p id="message"></p>
+
+	<script>
+		const openCameraBtn = document.getElementById('open-camera');
+		const video = document.getElementById('video');
+		const captureBtn = document.getElementById('capture');
+		const closeCameraBtn = document.getElementById('close-camera');
+		const imageModal = document.getElementById('image-modal');
+		const capturedImage = document.getElementById('captured-image');
+		const uploadModalBtn = document.getElementById('upload-modal');
+		const cancelModalBtn = document.getElementById('cancel-modal');
+		const messageDiv = document.getElementById('message');
+
+		let stream;
+
+		// Open Camera
+		openCameraBtn.addEventListener('click', async () => {
+			stream = await navigator.mediaDevices.getUserMedia({video: true});
+			video.srcObject = stream;
+			video.style.display = 'block';
+			openCameraBtn.style.display = 'none';
+			captureBtn.style.display = 'inline-block';
+			closeCameraBtn.style.display = 'inline-block';
+		});
+
+		// Capture Image
+		captureBtn.addEventListener('click', () => {
+			const canvas = document.createElement('canvas');
+			canvas.width = video.videoWidth;
+			canvas.height = video.videoHeight;
+			const context = canvas.getContext('2d');
+			context.drawImage(video, 0, 0, canvas.width, canvas.height);
+			const imageDataUrl = canvas.toDataURL('image/png');
+			capturedImage.src = imageDataUrl;
+			imageModal.style.display = 'flex';
+		});
+
+		// Close Camera
+		closeCameraBtn.addEventListener('click', () => {
+			stream.getTracks().forEach(track => track.stop());
+			video.style.display = 'none';
+			openCameraBtn.style.display = 'inline-block';
+			captureBtn.style.display = 'none';
+			closeCameraBtn.style.display = 'none';
+		});
+
+		// Cancel Modal
+		cancelModalBtn.addEventListener('click', () => {
+			imageModal.style.display = 'none';
+		});
+
+		// Upload Modal
+		uploadModalBtn.addEventListener('click', () => {
+			// Convert captured image to file object
+			const formData = new FormData();
+			formData.append('file', dataURLtoFile(capturedImage.src, 'captured-image.png'));
+
+			// Send POST request to backend for image upload
+			fetch('/uploadImage', {
+				method: 'POST',
+				body: formData
+			})
+				.then(response => {
+					if (response.ok) {
+						return response.json(); // Ensure backend returns JSON
+					} else {
+						throw new Error('Upload failed');
+					}
+				})
+				.then(data => {
+					imageModal.style.display = 'none';
+					messageDiv.innerText = data.message; // Ensure backend sends a "message" in JSON
+					messageDiv.style.color = 'green';
+				})
+				.catch(error => {
+					messageDiv.innerText = 'Image upload failed: ' + error.message;
+					messageDiv.style.color = 'red';
+				});
+		});
+
+		// Helper function to convert dataURL to File object
+		// Helper function to convert dataURL to File object
+		function dataURLtoFile(dataUrl, filename) {
+			const arr = dataUrl.split(',');
+			const mime = arr[0].match(/:(.*?);/)[1];
+			const bstr = atob(arr[1]);
+			let n = bstr.length;  // Use `let` to allow decrement
+			const u8arr = new Uint8Array(n);
+			while (n--) {
+				u8arr[n] = bstr.charCodeAt(n);
+			}
+			return new File([u8arr], filename, {type: mime});
+		}
+
+
+		console.log('Image ready for upload:', capturedImage.src);
+	</script>
+
+</body>
+
+</html>
